@@ -10,7 +10,7 @@ import java.util.List;
 
 @Slf4j
 @Repository
-public class ItemRepository implements ItemStorage{
+public class ItemRepository implements ItemStorage {
     private long itemId = 0;
     private final HashMap<Long, Item> items = new HashMap<>();
 
