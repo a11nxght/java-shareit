@@ -1,6 +1,7 @@
 package ru.practicum.shareit.user;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.user.model.User;
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-@Repository
+@Component
 public class UserRepository implements UserStorage {
     private long taskId = 0;
     private final HashMap<Long, User> users = new HashMap<>();

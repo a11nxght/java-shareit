@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
@@ -9,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 
 @Slf4j
-@Repository
+@Component
 public class ItemRepository implements ItemStorage {
     private long itemId = 0;
     private final HashMap<Long, Item> items = new HashMap<>();

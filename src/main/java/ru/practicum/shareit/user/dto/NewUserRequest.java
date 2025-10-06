@@ -9,5 +9,6 @@ public class NewUserRequest {
     @Email(message = "Некорректный email")
     @NotBlank(message = "Некорректный email")
     private String email;
+    @NotBlank(message = "Некорректный email")
     private String name;
 }
