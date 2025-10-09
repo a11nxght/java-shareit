@@ -1,35 +1,41 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.UserStorage;
+import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
 
-    private final ItemStorage itemStorage;
-    private final UserStorage userStorage;
+    private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
 
     @Override
     public ItemDto create(ItemDto itemDto, long userId) {
-        User user = userStorage.get(userId);
-        Item item = ItemMapper.toItem(itemDto);
-        item.setOwner(user);
-        item = itemStorage.add(item);
+        User user = userRepository.findById(userId).orElseThrow(() -> {
+            log.warn("Unable to create item. User not found.");
+            return new NotFoundException("User not found.");
+        });
+        Item item = itemRepository.save(ItemMapper.toItem(itemDto, user));
         return ItemMapper.toItemDto(item);
     }
 
     @Override
     public ItemDto update(ItemDto itemDto, long itemId, long userId) {
-        Item item = itemStorage.get(itemId);
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> {
+            log.warn("Unable to update item. Item not found.");
+            return new NotFoundException("Item not found.");
+        });
         if (!item.getOwner().getId().equals(userId)) {
             throw new NotFoundException("У данного пользователя нет вещи с таким id.");
         }
@@ -42,18 +48,21 @@ public class ItemServiceImpl implements ItemService {
         if (itemDto.getAvailable() != null) {
             item.setAvailable(itemDto.getAvailable());
         }
-        item = itemStorage.update(item);
+        item = itemRepository.save(item);
         return ItemMapper.toItemDto(item);
     }
 
     @Override
     public ItemDto getItem(long id) {
-        return ItemMapper.toItemDto(itemStorage.get(id));
+        return ItemMapper.toItemDto(itemRepository.findById(id).orElseThrow(() -> {
+            log.warn("Unable to get item. Item not found.");
+            return new NotFoundException("Item not found.");
+        }));
     }
 
     @Override
     public List<ItemDto> getItems(long userId) {
-        return itemStorage.getItems(userId).stream().map(ItemMapper::toItemDto).toList();
+        return itemRepository.findAllByOwnerId(userId).stream().map(ItemMapper::toItemDto).toList();
     }
 
     @Override
@@ -61,6 +70,6 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.isBlank()) {
             return List.of();
         }
-        return itemStorage.searchItems(text, userId).stream().map(ItemMapper::toItemDto).toList();
+        return itemRepository.search(text).stream().map(ItemMapper::toItemDto).toList();
     }
 }

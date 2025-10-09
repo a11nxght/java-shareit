@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.DuplicatedDataException;
+import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.user.dto.NewUserRequest;
 import ru.practicum.shareit.user.dto.UpdateUserRequest;
 import ru.practicum.shareit.user.dto.UserDto;
@@ -19,36 +20,40 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 class UserServiceImpl implements UserService {
 
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
 
     @Override
     public UserDto create(NewUserRequest request) {
-        Optional<User> alreadyExistUser = userStorage.findByEmail(request.getEmail());
+        Optional<User> alreadyExistUser = userRepository.findByEmail(request.getEmail());
         if (alreadyExistUser.isPresent()) {
-            throw new DuplicatedDataException("Данный имейл уже используется");
+            log.warn("Unable to create user.This email is already in use.");
+            throw new DuplicatedDataException("This email is already in use.");
         }
         User user = UserMapper.mapToUser(request);
-        user = userStorage.add(user);
+        user = userRepository.save(user);
         return UserMapper.mapToUserDto(user);
     }
 
     @Override
     public UserDto update(UpdateUserRequest request, long userId) {
-        User user = userStorage.get(userId);
+        User user = userRepository.findById(userId).orElseThrow(() -> {
+            log.warn("Unable to update user.User not found");
+            return new NotFoundException("User not found");});
         if (request.hasEmail()) {
-            Optional<User> alreadyExistUser = userStorage.findByEmail(request.getEmail());
+            Optional<User> alreadyExistUser = userRepository.findByEmail(request.getEmail());
             if (alreadyExistUser.isPresent()) {
-                throw new DuplicatedDataException("Данный имейл уже используется");
+                log.warn("Unable to update user.This email is already in use.");
+                throw new DuplicatedDataException("This email is already in use.");
             }
         }
-        User updatedUser = UserMapper.updateUserFields(user, request);
-        updatedUser = userStorage.update(updatedUser);
-        return UserMapper.mapToUserDto(updatedUser);
+        UserMapper.updateUserFields(user, request);
+        userRepository.save(user);
+        return UserMapper.mapToUserDto(user);
     }
 
     @Override
     public List<UserDto> findAll() {
-        return userStorage.getAll()
+        return userRepository.findAll()
                 .stream()
                 .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
@@ -56,11 +61,15 @@ class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUser(long id) {
-        return UserMapper.mapToUserDto(userStorage.get(id));
+        return UserMapper
+                .mapToUserDto(userRepository.findById(id).orElseThrow(() -> {
+                    log.warn("Unable to get user.User not found");
+                    return new NotFoundException("User not found");
+                }));
     }
 
     @Override
     public void deleteUser(long id) {
-        userStorage.delete(id);
+        userRepository.deleteById(id);
     }
 }
