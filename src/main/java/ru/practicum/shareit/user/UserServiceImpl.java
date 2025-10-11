@@ -42,7 +42,8 @@ class UserServiceImpl implements UserService {
     public UserDto update(UpdateUserRequest request, long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> {
             log.warn("Unable to update user.User not found");
-            return new NotFoundException("User not found");});
+            return new NotFoundException("User not found");
+        });
         if (request.hasEmail()) {
             Optional<User> alreadyExistUser = userRepository.findByEmail(request.getEmail());
             if (alreadyExistUser.isPresent()) {

@@ -11,5 +11,5 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findAllByItemIdOrderByCreatedDesc(Long itemId);
 
     @Query("select c from Comment c where c.item.id in :itemIds order by c.created desc")
-    List<Comment> findAllByItemIdsOrderByCreatedDesc(List<Long>itemIds);
+    List<Comment> findAllByItemIdsOrderByCreatedDesc(List<Long> itemIds);
 }

@@ -82,13 +82,13 @@ public class ItemServiceImpl implements ItemService {
             Optional<Booking> lastBooking = bookingRepository
                     .findFirstByItemIdAndStatusAndStartBeforeOrderByStartDesc(item.getId(),
                             BookingStatus.APPROVED, LocalDateTime.now());
-            if (lastBooking.isPresent()){
+            if (lastBooking.isPresent()) {
                 lastBookingSmallDto = BookingMapper.toBookingSmallDto(lastBooking.get());
             }
             Optional<Booking> nextBooking = bookingRepository
                     .findFirstByItemIdAndStatusAndStartAfterOrderByStart(item.getId(),
                             BookingStatus.APPROVED, LocalDateTime.now());
-            if (nextBooking.isPresent()){
+            if (nextBooking.isPresent()) {
                 nextBookingSmallDto = BookingMapper.toBookingSmallDto(nextBooking.get());
             }
         }
@@ -126,10 +126,10 @@ public class ItemServiceImpl implements ItemService {
                 .map(item -> {
                     BookingSmallDto lastBooking = new BookingSmallDto();
                     BookingSmallDto nextBooking = new BookingSmallDto();
-                    if (lastByItem.get(item.getId())!=null) {
+                    if (lastByItem.get(item.getId()) != null) {
                         lastBooking = BookingMapper.toBookingSmallDto(lastByItem.get(item.getId()));
                     }
-                    if(nextByItem.get(item.getId())!=null) {
+                    if (nextByItem.get(item.getId()) != null) {
                         nextBooking = BookingMapper.toBookingSmallDto(nextByItem.get(item.getId()));
                     }
                     ItemWithBookingDto itemWithBookingDto = ItemMapper.toItemWithBookingDto(item, lastBooking, nextBooking);

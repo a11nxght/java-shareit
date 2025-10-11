@@ -28,8 +28,8 @@ public class ItemMapper {
         return item;
     }
 
-    public static ItemWithBookingDto toItemWithBookingDto (Item item, BookingSmallDto lastBooking,
-                                                           BookingSmallDto nextBooking){
+    public static ItemWithBookingDto toItemWithBookingDto(Item item, BookingSmallDto lastBooking,
+                                                          BookingSmallDto nextBooking) {
         ItemWithBookingDto itemWithBookingDto = new ItemWithBookingDto();
         itemWithBookingDto.setId(item.getId());
         itemWithBookingDto.setName(item.getName());
