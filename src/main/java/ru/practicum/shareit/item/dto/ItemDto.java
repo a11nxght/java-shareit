@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 public class ItemDto {
@@ -16,4 +18,5 @@ public class ItemDto {
     @NotNull(message = "Обязательно надо заполнить доступна вещь или нет")
     private Boolean available;
     private Long request;
+    private List<CommentDto> comments;
 }

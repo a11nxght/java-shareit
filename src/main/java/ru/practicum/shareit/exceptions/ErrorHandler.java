@@ -24,4 +24,10 @@ public class ErrorHandler {
     public ErrorResponse badRequestHandle(final BadRequestException e) {
         return new ErrorResponse(e.getMessage());
     }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse forbiddenHandle(final ForbiddenException e) {
+        return new ErrorResponse(e.getMessage());
+    }
 }

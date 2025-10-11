@@ -10,6 +10,8 @@ import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.exceptions.BadRequestException;
+import ru.practicum.shareit.exceptions.ForbiddenException;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
@@ -24,7 +26,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class BookingServiceImpl implements BookingService{
+public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
@@ -39,7 +41,17 @@ public class BookingServiceImpl implements BookingService{
         });
         Item item = itemRepository.findById(newBookingRequest.getItemId()).orElseThrow(() -> {
             log.warn("Unable to create booking. Item not found.");
-            return new NotFoundException("Item not found.");});
+            return new NotFoundException("Item not found.");
+        });
+        if (!item.isAvailable()) {
+            log.warn("Unable to create booking. Item is not available for booking.");
+            throw new BadRequestException("Item is not available for booking.");
+        }
+        if (item.getOwner().getId().equals(userId)) {
+            log.warn("Unable to create booking. Owner can not book.");
+            throw new BadRequestException("Owner can not book.");
+        }
+
         Booking booking = bookingRepository.save(BookingMapper.toBooking(newBookingRequest, item, user));
         return BookingMapper.toBookingDto(booking);
     }
@@ -53,7 +65,7 @@ public class BookingServiceImpl implements BookingService{
         });
         if (!booking.getItem().getOwner().getId().equals(ownerId)) {
             log.warn("Unable to approve or reject booking. Only the owner of the item can approve or reject the booking.");
-            throw new NotFoundException("Unable to approve or reject booking. " +
+            throw new ForbiddenException("Unable to approve or reject booking. " +
                     "This user does not have an item with this id.");
         }
         if (approved) {
