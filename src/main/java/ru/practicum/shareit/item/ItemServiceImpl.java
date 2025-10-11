@@ -159,8 +159,8 @@ public class ItemServiceImpl implements ItemService {
             log.warn("Unable to create comment. Item not found.");
             return new NotFoundException("Item not found.");
         });
-        bookingRepository.findByBookerIdAndItemIdAndStatusAndEndBefore(authorId, itemId, BookingStatus.APPROVED
-                , LocalDateTime.now()).orElseThrow(() -> {
+        bookingRepository.findByBookerIdAndItemIdAndStatusAndEndBefore(authorId, itemId, BookingStatus.APPROVED,
+                LocalDateTime.now()).orElseThrow(() -> {
             log.warn("Unable to create comment. The author did not booking this item.");
             return new BadRequestException("The author did not booking this item.");
         });
