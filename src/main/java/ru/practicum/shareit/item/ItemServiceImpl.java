@@ -4,14 +4,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.dto.BookingSmallDto;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
+import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemWithBookingDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -21,6 +29,7 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
     @Override
     @Transactional
@@ -65,8 +74,31 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> getItems(long userId) {
-        return itemRepository.findAllByOwnerId(userId).stream().map(ItemMapper::toItemDto).toList();
+    public List<ItemWithBookingDto> getItems(long userId) {
+        List<Item> items = itemRepository.findAllByOwnerIdOrderById(userId);
+        if (items.isEmpty()) {
+            return List.of();
+        }
+        List<Long> itemsIds = items.stream().map(Item::getId).toList();
+
+        List<Booking> past = bookingRepository.findPastForItems(itemsIds, LocalDateTime.now());
+        List<Booking> future = bookingRepository.findFutureForItems(itemsIds, LocalDateTime.now());
+
+        Map<Long, Booking> lastByItem = new HashMap<>();
+        for (Booking booking : past) {
+            lastByItem.putIfAbsent(booking.getItem().getId(), booking);
+        }
+        Map<Long, Booking> nextByItem = new HashMap<>();
+        for (Booking booking : future) {
+            nextByItem.putIfAbsent(booking.getItem().getId(), booking);
+        }
+        return items
+                .stream()
+                .map(item -> {
+                    BookingSmallDto lastBooking = BookingMapper.toBookingSmallDto(lastByItem.get(item.getId()));
+                    BookingSmallDto nextBooking = BookingMapper.toBookingSmallDto(nextByItem.get(item.getId()));
+                    return ItemMapper.toItemWithBookingDto(item, lastBooking, nextBooking);
+                }).toList();
     }
 
     @Override
