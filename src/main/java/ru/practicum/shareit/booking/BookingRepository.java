@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,30 +15,30 @@ import java.util.Optional;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    List<Booking> findAllByBookerIdOrderByStartDesc(Long bookerId);
+    List<Booking> findAllByBookerId(Long bookerId, Sort sort);
 
-    List<Booking> findAllByItemOwnerIdOrderByStartDesc(Long bookerId);
+    List<Booking> findAllByItemOwnerId(Long bookerId, Sort sort);
 
 
-    List<Booking> findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(Long bookerId,
-                                                                          LocalDateTime now,
-                                                                          LocalDateTime oneMoreNow);
+    List<Booking> findByBookerIdAndStartBeforeAndEndAfter(Long bookerId,
+                                                          LocalDateTime now,
+                                                          LocalDateTime oneMoreNow, Sort sort);
 
-    List<Booking> findByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(Long bookerId,
-                                                                             LocalDateTime now,
-                                                                             LocalDateTime oneMoreNow);
+    List<Booking> findByItemOwnerIdAndStartBeforeAndEndAfter(Long bookerId,
+                                                             LocalDateTime now,
+                                                             LocalDateTime oneMoreNow, Sort sort);
 
-    List<Booking> findByBookerIdAndEndBeforeOrderByStartDesc(Long bookerId, LocalDateTime now);
+    List<Booking> findByBookerIdAndEndBefore(Long bookerId, LocalDateTime now, Sort sort);
 
-    List<Booking> findByItemOwnerIdAndEndBeforeOrderByStartDesc(Long bookerId, LocalDateTime now);
+    List<Booking> findByItemOwnerIdAndEndBefore(Long bookerId, LocalDateTime now, Sort sort);
 
-    List<Booking> findByBookerIdAndStartAfterOrderByStartDesc(Long bookerId, LocalDateTime now);
+    List<Booking> findByBookerIdAndStartAfter(Long bookerId, LocalDateTime now, Sort sort);
 
-    List<Booking> findByItemOwnerIdAndStartAfterOrderByStartDesc(Long bookerId, LocalDateTime now);
+    List<Booking> findByItemOwnerIdAndStartAfter(Long bookerId, LocalDateTime now, Sort sort);
 
-    List<Booking> findByBookerIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
+    List<Booking> findByBookerIdAndStatus(Long bookerId, BookingStatus status, Sort sort);
 
-    List<Booking> findByItemOwnerIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
+    List<Booking> findByItemOwnerIdAndStatus(Long bookerId, BookingStatus status, Sort sort);
 
     @Query("""
                 select b from Booking b
@@ -61,9 +62,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByBookerIdAndItemIdAndStatusAndEndBefore(Long bookerId, Long itemId, BookingStatus status,
                                                                    LocalDateTime now);
 
-    Optional<Booking> findFirstByItemIdAndStatusAndStartBeforeOrderByStartDesc(Long itemId, BookingStatus status,
-                                                                               LocalDateTime now);
+    Optional<Booking> findFirstByItemIdAndStatusAndStartBefore(Long itemId, BookingStatus status,
+                                                               LocalDateTime now, Sort sort);
 
-    Optional<Booking> findFirstByItemIdAndStatusAndStartAfterOrderByStart(Long itemId, BookingStatus status,
-                                                                          LocalDateTime now);
+    Optional<Booking> findFirstByItemIdAndStatusAndStartAfter(Long itemId, BookingStatus status,
+                                                              LocalDateTime now, Sort sort);
 }

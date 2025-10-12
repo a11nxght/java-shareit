@@ -2,6 +2,7 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -95,20 +96,21 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingDto> getALLByBookerId(Long bookerId, String stateStr) {
         BookingState state = BookingState.from(stateStr);
         LocalDateTime now = LocalDateTime.now();
+        Sort newestFilm = Sort.by(Sort.Direction.DESC, "start");
         List<Booking> bookings = new ArrayList<>();
         switch (state) {
             case ALL -> bookings = bookingRepository
-                    .findAllByBookerIdOrderByStartDesc(bookerId);
+                    .findAllByBookerId(bookerId, newestFilm);
             case CURRENT -> bookings = bookingRepository
-                    .findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(bookerId, now, now);
+                    .findByBookerIdAndStartBeforeAndEndAfter(bookerId, now, now, newestFilm);
             case PAST -> bookings = bookingRepository
-                    .findByBookerIdAndEndBeforeOrderByStartDesc(bookerId, now);
+                    .findByBookerIdAndEndBefore(bookerId, now, newestFilm);
             case FUTURE -> bookings = bookingRepository
-                    .findByBookerIdAndStartAfterOrderByStartDesc(bookerId, now);
+                    .findByBookerIdAndStartAfter(bookerId, now, newestFilm);
             case WAITING -> bookings = bookingRepository
-                    .findByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.WAITING);
+                    .findByBookerIdAndStatus(bookerId, BookingStatus.WAITING, newestFilm);
             case REJECTED -> bookings = bookingRepository
-                    .findByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.REJECTED);
+                    .findByBookerIdAndStatus(bookerId, BookingStatus.REJECTED, newestFilm);
         }
         return bookings.stream().map(BookingMapper::toBookingDto).toList();
     }
@@ -121,20 +123,21 @@ public class BookingServiceImpl implements BookingService {
         });
         BookingState state = BookingState.from(stateStr);
         LocalDateTime now = LocalDateTime.now();
+        Sort newestFilm = Sort.by(Sort.Direction.DESC, "start");
         List<Booking> bookings = new ArrayList<>();
         switch (state) {
             case ALL -> bookings = bookingRepository
-                    .findAllByItemOwnerIdOrderByStartDesc(ownerId);
+                    .findAllByItemOwnerId(ownerId, newestFilm);
             case CURRENT -> bookings = bookingRepository
-                    .findByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(ownerId, now, now);
+                    .findByItemOwnerIdAndStartBeforeAndEndAfter(ownerId, now, now, newestFilm);
             case PAST -> bookings = bookingRepository
-                    .findByItemOwnerIdAndEndBeforeOrderByStartDesc(ownerId, now);
+                    .findByItemOwnerIdAndEndBefore(ownerId, now, newestFilm);
             case FUTURE -> bookings = bookingRepository
-                    .findByItemOwnerIdAndStartAfterOrderByStartDesc(ownerId, now);
+                    .findByItemOwnerIdAndStartAfter(ownerId, now, newestFilm);
             case WAITING -> bookings = bookingRepository
-                    .findByItemOwnerIdAndStatusOrderByStartDesc(ownerId, BookingStatus.WAITING);
+                    .findByItemOwnerIdAndStatus(ownerId, BookingStatus.WAITING, newestFilm);
             case REJECTED -> bookings = bookingRepository
-                    .findByItemOwnerIdAndStatusOrderByStartDesc(ownerId, BookingStatus.REJECTED);
+                    .findByItemOwnerIdAndStatus(ownerId, BookingStatus.REJECTED, newestFilm);
         }
         return bookings.stream().map(BookingMapper::toBookingDto).toList();
     }

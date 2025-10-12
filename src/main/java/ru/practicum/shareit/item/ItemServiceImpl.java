@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.BookingRepository;
@@ -76,18 +77,20 @@ public class ItemServiceImpl implements ItemService {
             log.warn("Unable to get item. Item not found.");
             return new NotFoundException("Item not found.");
         });
+        Sort newestFirst = Sort.by(Sort.Direction.DESC, "start");
+        Sort oldestFirst = Sort.by(Sort.Direction.DESC, "start");
         BookingSmallDto lastBookingSmallDto = null;
         BookingSmallDto nextBookingSmallDto = null;
         if (item.getOwner().getId().equals(userId)) {
             Optional<Booking> lastBooking = bookingRepository
-                    .findFirstByItemIdAndStatusAndStartBeforeOrderByStartDesc(item.getId(),
-                            BookingStatus.APPROVED, LocalDateTime.now());
+                    .findFirstByItemIdAndStatusAndStartBefore(item.getId(),
+                            BookingStatus.APPROVED, LocalDateTime.now(), newestFirst);
             if (lastBooking.isPresent()) {
                 lastBookingSmallDto = BookingMapper.toBookingSmallDto(lastBooking.get());
             }
             Optional<Booking> nextBooking = bookingRepository
-                    .findFirstByItemIdAndStatusAndStartAfterOrderByStart(item.getId(),
-                            BookingStatus.APPROVED, LocalDateTime.now());
+                    .findFirstByItemIdAndStatusAndStartAfter(item.getId(),
+                            BookingStatus.APPROVED, LocalDateTime.now(), oldestFirst);
             if (nextBooking.isPresent()) {
                 nextBookingSmallDto = BookingMapper.toBookingSmallDto(nextBooking.get());
             }

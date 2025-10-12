@@ -2,6 +2,7 @@ package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.DuplicatedDataException;
@@ -13,7 +14,6 @@ import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,14 +27,14 @@ class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto create(NewUserRequest request) {
-        Optional<User> alreadyExistUser = userRepository.findByEmail(request.getEmail());
-        if (alreadyExistUser.isPresent()) {
-            log.warn("Unable to create user.This email is already in use.");
+        User user = UserMapper.mapToUser(request);
+        try {
+            user = userRepository.save(user);
+            return UserMapper.mapToUserDto(user);
+        } catch (DataIntegrityViolationException exception) {
+            log.warn("Unable to create user. Email {} is already in use.", request.getEmail());
             throw new DuplicatedDataException("This email is already in use.");
         }
-        User user = UserMapper.mapToUser(request);
-        user = userRepository.save(user);
-        return UserMapper.mapToUserDto(user);
     }
 
     @Override
@@ -44,16 +44,14 @@ class UserServiceImpl implements UserService {
             log.warn("Unable to update user.User not found");
             return new NotFoundException("User not found");
         });
-        if (request.hasEmail()) {
-            Optional<User> alreadyExistUser = userRepository.findByEmail(request.getEmail());
-            if (alreadyExistUser.isPresent()) {
-                log.warn("Unable to update user.This email is already in use.");
-                throw new DuplicatedDataException("This email is already in use.");
-            }
-        }
         UserMapper.updateUserFields(user, request);
-        userRepository.save(user);
-        return UserMapper.mapToUserDto(user);
+        try {
+            userRepository.save(user);
+            return UserMapper.mapToUserDto(user);
+        } catch (DataIntegrityViolationException exception) {
+            log.warn("Unable to update user. Email {} is already in use.", request.getEmail());
+            throw new DuplicatedDataException("This email is already in use.");
+        }
     }
 
     @Override
