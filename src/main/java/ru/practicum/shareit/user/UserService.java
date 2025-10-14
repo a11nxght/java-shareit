@@ -16,7 +16,5 @@ interface UserService {
 
     UserDto getUser(long id);
 
-    public void deleteUser(long id);
-
-
+    void deleteUser(long id);
 }

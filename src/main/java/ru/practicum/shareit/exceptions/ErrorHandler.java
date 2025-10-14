@@ -18,4 +18,16 @@ public class ErrorHandler {
     public ErrorResponse duplicatedDataHandle(final DuplicatedDataException e) {
         return new ErrorResponse(e.getMessage());
     }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse badRequestHandle(final BadRequestException e) {
+        return new ErrorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse forbiddenHandle(final ForbiddenException e) {
+        return new ErrorResponse(e.getMessage());
+    }
 }

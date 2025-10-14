@@ -24,13 +24,12 @@ public class UserMapper {
         return user;
     }
 
-    public static User updateUserFields(User user, UpdateUserRequest request) {
+    public static void updateUserFields(User user, UpdateUserRequest request) {
         if (request.hasEmail()) {
             user.setEmail(request.getEmail());
         }
         if (request.hasName()) {
             user.setName(request.getName());
         }
-        return user;
     }
 }
