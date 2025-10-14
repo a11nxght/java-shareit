@@ -20,6 +20,6 @@ public class ItemDto {
     private String description;
     @NotNull(message = "Обязательно надо заполнить доступна вещь или нет")
     private Boolean available;
-    private Long request;
+    private Long requestId;
     private List<CommentDto> comments;
 }
