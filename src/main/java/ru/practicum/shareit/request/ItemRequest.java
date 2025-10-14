@@ -3,8 +3,10 @@ package ru.practicum.shareit.request;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import ru.practicum.shareit.user.model.User;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 
@@ -12,6 +14,7 @@ import java.util.Objects;
 @Table(name = "requests", schema = "public")
 @Getter
 @Setter
+@ToString
 public class ItemRequest {
 
     @Id
@@ -19,12 +22,16 @@ public class ItemRequest {
     @Column(name = "request_id")
     private Long id;
 
-
+    @Column(name = "description")
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requestor_id")
+    @ToString.Exclude
     private User requestor;
+
+    @Column(name = "created_date")
+    private LocalDateTime created;
 
     @Override
     public boolean equals(Object o) {
