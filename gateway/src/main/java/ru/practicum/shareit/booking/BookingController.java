@@ -23,27 +23,27 @@ public class BookingController {
 
     @PatchMapping("/{bookingId}")
     public ResponseEntity<Object> approveOrReject(@RequestHeader("X-Sharer-User-Id") Long ownerId,
-                                      @PathVariable Long bookingId,
-                                      @RequestParam("approved") boolean approved) {
+                                                  @PathVariable Long bookingId,
+                                                  @RequestParam("approved") boolean approved) {
         return bookingClient.approveOrReject(ownerId, bookingId, approved);
     }
 
     @GetMapping("/{bookingId}")
     public ResponseEntity<Object> getById(@RequestHeader("X-Sharer-User-Id") Long userId,
-                              @PathVariable long bookingId) {
+                                          @PathVariable long bookingId) {
         return bookingClient.getById(userId, bookingId);
     }
 
     @GetMapping
     public ResponseEntity<Object> getAllByBookerId(@RequestHeader("X-Sharer-User-Id") Long bookerId,
-                                             @RequestParam(name = "state", defaultValue = "All") String state) {
+                                                   @RequestParam(name = "state", defaultValue = "All") String state) {
         BookingState bookingState = BookingState.from(state);
         return bookingClient.getAllByBookerId(bookerId, bookingState);
     }
 
     @GetMapping("/owner")
     public ResponseEntity<Object> getAllByItemOwnerId(@RequestHeader("X-Sharer-User-Id") Long ownerId,
-                                                @RequestParam(name = "state", defaultValue = "All") String state) {
+                                                      @RequestParam(name = "state", defaultValue = "All") String state) {
         BookingState bookingState = BookingState.from(state);
         return bookingClient.getAllByItemOwnerId(ownerId, bookingState);
     }

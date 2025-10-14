@@ -25,14 +25,14 @@ public class ItemController {
 
     @PatchMapping("/{itemId}")
     public ResponseEntity<Object> update(@RequestHeader("X-Sharer-User-Id") Long userId,
-                          @PathVariable long itemId,
-                          @RequestBody ItemDto itemDto) {
+                                         @PathVariable long itemId,
+                                         @RequestBody ItemDto itemDto) {
         return itemClient.update(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
     public ResponseEntity<Object> getItem(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                      @PathVariable long itemId) {
+                                          @PathVariable long itemId) {
         return itemClient.getItem(userId, itemId);
     }
 
@@ -43,14 +43,14 @@ public class ItemController {
 
     @GetMapping("/search")
     public ResponseEntity<Object> searchItems(@RequestParam String text,
-                                     @RequestHeader("X-Sharer-User-Id") Long userId) {
+                                              @RequestHeader("X-Sharer-User-Id") Long userId) {
         return itemClient.searchItems(userId, text);
     }
 
     @PostMapping("/{itemId}/comment")
     public ResponseEntity<Object> createComment(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                    @PathVariable long itemId,
-                                    @Valid @RequestBody CommentDto commentDto) {
+                                                @PathVariable long itemId,
+                                                @Valid @RequestBody CommentDto commentDto) {
         return itemClient.createComment(userId, itemId, commentDto);
     }
 }
