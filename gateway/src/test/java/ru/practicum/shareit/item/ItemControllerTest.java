@@ -239,4 +239,105 @@ class ItemControllerTest {
 
         verifyNoInteractions(itemClient);
     }
+
+    @Test
+    void testCreate_missingHeader_badRequest() throws Exception {
+        ItemDto body = new ItemDto();
+        body.setName("Дрель");
+        body.setDescription("как новая");
+        body.setAvailable(true);
+
+        mvc.perform(post("/items")
+                        .contentType(APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testSearchItems_emptyText_forwarded() throws Exception {
+        when(itemClient.searchItems(anyLong(), anyString()))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mvc.perform(get("/items/search")
+                        .header("X-Sharer-User-Id", "10")
+                        .param("text", ""))
+                .andExpect(status().isOk());
+
+        verify(itemClient).searchItems(10L, "");
+        verifyNoMoreInteractions(itemClient);
+    }
+
+    @Test
+    void testSearchItems_missingTextParam_badRequest() throws Exception {
+        mvc.perform(get("/items/search")
+                        .header("X-Sharer-User-Id", "10"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testUpdate_emptyBody_okAndForwarded() throws Exception {
+        when(itemClient.update(anyLong(), anyLong(), any(ItemDto.class)))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mvc.perform(patch("/items/{itemId}", 123L)
+                        .header("X-Sharer-User-Id", "7")
+                        .contentType(APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+
+        verify(itemClient).update(eq(7L), eq(123L), any(ItemDto.class));
+        verifyNoMoreInteractions(itemClient);
+    }
+
+    @Test
+    void testCreate_invalidJson_badRequest() throws Exception {
+        mvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(APPLICATION_JSON)
+                        .content("not-a-json"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testCreate_missingContentType_badRequestOrUnsupported() throws Exception {
+        mvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", "10")
+                        .content(mapper.writeValueAsString(new ItemDto())))
+                .andExpect(result -> {
+                    int sc = result.getResponse().getStatus();
+                    if (sc != 400 && sc != 415) {
+                        throw new AssertionError("Expected 400 or 415, got " + sc);
+                    }
+                });
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testCreateComment_blankText_badRequest() throws Exception {
+        CommentDto invalid = new CommentDto();
+        invalid.setText("   ");
+
+        mvc.perform(post("/items/{itemId}/comment", 5L)
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testGetItems_missingHeader_badRequest() throws Exception {
+        mvc.perform(get("/items"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
 }

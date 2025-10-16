@@ -1,13 +1,35 @@
 package ru.practicum.shareit.exceptions;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-@SpringBootTest
 class ErrorHandlerTest {
+
+    private final ErrorHandler handler = new ErrorHandler();
+
     @Test
-    void contextLoads() {
+    void notFoundHandle_returnsErrorResponseWithMessage() {
+        ErrorResponse res = handler.notFoundHandle(new NotFoundException("not-found msg"));
+        // Если в ErrorResponse поле называется getError()
+        assertThat(res.getError()).isEqualTo("not-found msg");
+        // Если у вас getMessage(), проверьте res.getMessage()
+    }
+
+    @Test
+    void duplicatedDataHandle_returnsErrorResponseWithMessage() {
+        ErrorResponse res = handler.duplicatedDataHandle(new DuplicatedDataException("conflict msg"));
+        assertThat(res.getError()).isEqualTo("conflict msg");
+    }
+
+    @Test
+    void badRequestHandle_returnsErrorResponseWithMessage() {
+        ErrorResponse res = handler.badRequestHandle(new BadRequestException("bad msg"));
+        assertThat(res.getError()).isEqualTo("bad msg");
+    }
+
+    @Test
+    void forbiddenHandle_returnsErrorResponseWithMessage() {
+        ErrorResponse res = handler.forbiddenHandle(new ForbiddenException("forbidden msg"));
+        assertThat(res.getError()).isEqualTo("forbidden msg");
     }
 }

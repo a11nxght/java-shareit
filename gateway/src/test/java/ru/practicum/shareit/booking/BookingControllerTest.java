@@ -163,4 +163,121 @@ class BookingControllerTest {
 
         verifyNoInteractions(bookingClient);
     }
+
+    @Test
+    void testCreate_propagatesClientStatusAndBody() throws Exception {
+        NewBookingRequest req = new NewBookingRequest();
+        req.setStart(LocalDateTime.now().plusDays(1));
+        req.setEnd(LocalDateTime.now().plusDays(2));
+        req.setItemId(1L);
+
+        ResponseEntity<Object> clientResp =
+                ResponseEntity.status(201).body(Map.of("id", 999));
+        when(bookingClient.create(eq(10L), any(NewBookingRequest.class))).thenReturn(clientResp);
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", 10L)
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated());
+
+        verify(bookingClient).create(eq(10L), any(NewBookingRequest.class));
+    }
+
+    @Test
+    void testGetById_propagates404() throws Exception {
+        when(bookingClient.getById(11L, 42L))
+                .thenReturn(ResponseEntity.status(404).body(Map.of("error", "not found")));
+
+        mvc.perform(get("/bookings/{bookingId}", 42L)
+                        .header("X-Sharer-User-Id", 11L))
+                .andExpect(status().isNotFound());
+
+        verify(bookingClient).getById(11L, 42L);
+    }
+
+    @Test
+    void testCreate_missingHeader_isBadRequest() throws Exception {
+        NewBookingRequest req = new NewBookingRequest();
+        req.setStart(LocalDateTime.now().plusDays(1));
+        req.setEnd(LocalDateTime.now().plusDays(2));
+        req.setItemId(5L);
+
+        mvc.perform(post("/bookings")
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(bookingClient);
+    }
+
+    @Test
+    void testApproveOrReject_missingApprovedParam_isBadRequest() throws Exception {
+        mvc.perform(patch("/bookings/{bookingId}", 77L)
+                        .header("X-Sharer-User-Id", 20L))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(bookingClient);
+    }
+
+    @Test
+    void testCreateValidationFail_noStart() throws Exception {
+        NewBookingRequest req = new NewBookingRequest();
+        req.setEnd(LocalDateTime.now().plusDays(1));
+        req.setItemId(5L);
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", 10L)
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(bookingClient);
+    }
+
+    @Test
+    void testCreateValidationFail_noEnd() throws Exception {
+        NewBookingRequest req = new NewBookingRequest();
+        req.setStart(LocalDateTime.now().plusDays(1));
+        req.setItemId(5L);
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", 10L)
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(bookingClient);
+    }
+
+    @Test
+    void testCreate_startNow_endFuture_ok() throws Exception {
+        NewBookingRequest req = new NewBookingRequest();
+        req.setStart(LocalDateTime.now().plusSeconds(2));
+        req.setEnd(LocalDateTime.now().plusHours(1).withNano(0));
+        req.setItemId(5L);
+
+        when(bookingClient.create(eq(10L), any(NewBookingRequest.class)))
+                .thenReturn(ResponseEntity.ok(Map.of("ok", true)));
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", 10L)
+                        .contentType(APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+
+        verify(bookingClient).create(eq(10L), any(NewBookingRequest.class));
+    }
+
+    @Test
+    void testGetAllByBookerId_defaultStateALL_whenParamMissing() throws Exception {
+        when(bookingClient.getAllByBookerId(anyLong(), any(BookingState.class)))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", 33L))
+                .andExpect(status().isOk());
+
+        verify(bookingClient).getAllByBookerId(33L, BookingState.ALL);
+    }
 }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -125,5 +126,108 @@ class UserClientTest {
 
         server.verify();
         assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @Test
+    void testCreate_conflict409_isPropagated() throws Exception {
+        NewUserRequest req = new NewUserRequest();
+        req.setName("Dmitry");
+        req.setEmail("dup@mail.com");
+
+        server.expect(once(), requestTo("http://localhost:9090/users"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.CONFLICT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":\"email already exists\"}"));
+
+        var resp = client.create(req);
+
+        server.verify();
+        assertThat(resp.getStatusCode().value()).isEqualTo(409);
+        assertThat(resp.getBody()).isNotNull();
+    }
+
+    @Test
+    void testCreate_serverError500_isPropagated() throws Exception {
+        NewUserRequest req = new NewUserRequest();
+        req.setName("Any");
+        req.setEmail("any@mail.com");
+
+        server.expect(once(), requestTo("http://localhost:9090/users"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withServerError());
+
+        var resp = client.create(req);
+
+        server.verify();
+        assertThat(resp.getStatusCode().is5xxServerError()).isTrue();
+    }
+
+    @Test
+    void testUpdate_partial_onlyName_sent_emailOmitted() throws Exception {
+        UpdateUserRequest req = new UpdateUserRequest();
+        req.setName("OnlyName");
+
+        String responseJson = "{\"id\": 5, \"name\": \"OnlyName\"}";
+
+        server.expect(once(), requestTo("http://localhost:9090/users/5"))
+                .andExpect(method(HttpMethod.PATCH))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.name").value("OnlyName"))
+                .andExpect(jsonPath("$.email").doesNotExist()) // важно: поле не должно отправляться
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        var resp = client.update(5L, req);
+
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+        JsonNode body = mapper.valueToTree(resp.getBody());
+        assertThat(body.get("id").asLong()).isEqualTo(5L);
+        assertThat(body.get("name").asText()).isEqualTo("OnlyName");
+    }
+
+    @Test
+    void testFindAll_sendsAcceptHeader_andReturnsArray() {
+        String responseJson = "[{\"id\":1,\"name\":\"A\"},{\"id\":2,\"name\":\"B\"}]";
+
+        server.expect(once(), requestTo("http://localhost:9090/users"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        var resp = client.findAll();
+
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+        var list = mapper.convertValue(resp.getBody(), java.util.List.class);
+        assertThat(list).hasSize(2);
+    }
+
+    @Test
+    void testGetUser_notFound404_isPropagated() {
+        server.expect(once(), requestTo("http://localhost:9090/users/999"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(org.springframework.http.HttpStatus.NOT_FOUND)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":\"not found\"}"));
+
+        var resp = client.getUser(999L);
+
+        server.verify();
+        assertThat(resp.getStatusCodeValue()).isEqualTo(404);
+        assertThat(resp.getBody()).isNotNull();
+    }
+
+    @Test
+    void testDeleteUser_404_isPropagated() {
+        server.expect(once(), requestTo("http://localhost:9090/users/42"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(org.springframework.http.HttpStatus.NOT_FOUND)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":\"not found\"}"));
+
+        var resp = client.deleteUser(42L);
+
+        server.verify();
+        assertThat(resp.getStatusCodeValue()).isEqualTo(404);
     }
 }

@@ -16,6 +16,9 @@ import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
+import org.springframework.http.HttpStatus;
+
+
 @RestClientTest(ItemRequestClient.class)
 @TestPropertySource(properties = {
         "shareit-server.url=http://localhost:9090"
@@ -106,4 +109,73 @@ class ItemRequestClientTest {
         assertThat(body.get("id").asLong()).isEqualTo(77L);
         assertThat(body.get("description").asText()).isEqualTo("Дрель");
     }
+
+    @Test
+    void testCreate_serverValidationError_400() throws Exception {
+        ItemRequestDto dto = new ItemRequestDto(); // description = null
+
+        server.expect(once(), requestTo("http://localhost:9090/requests"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-Sharer-User-Id", "10"))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":\"description must not be null\"}"));
+
+        var resp = client.create(10L, dto);
+
+        server.verify();
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void testGetById_notFound_404() {
+        server.expect(once(), requestTo("http://localhost:9090/requests/999"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-Sharer-User-Id", "40"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":\"request not found\"}"));
+
+        var resp = client.getById(40L, 999L);
+
+        server.verify();
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void testGetOwn_serverError_500() {
+        server.expect(once(), requestTo("http://localhost:9090/requests"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-Sharer-User-Id", "20"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        var resp = client.getOwn(20L);
+
+        server.verify();
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    void testCreate_payloadContainsDescriptionUtf8() throws Exception {
+        ItemRequestDto dto = new ItemRequestDto();
+        dto.setDescription("Запрос: нужна дрель");
+
+        String responseJson = "{\"id\": 10, \"description\": \"Запрос: нужна дрель\"}";
+
+        server.expect(once(), requestTo("http://localhost:9090/requests"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-Sharer-User-Id", "15"))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.description").value("Запрос: нужна дрель"))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        var resp = client.create(15L, dto);
+
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+        JsonNode body = mapper.valueToTree(resp.getBody());
+        assertThat(body.get("id").asLong()).isEqualTo(10L);
+        assertThat(body.get("description").asText()).isEqualTo("Запрос: нужна дрель");
+    }
+
 }

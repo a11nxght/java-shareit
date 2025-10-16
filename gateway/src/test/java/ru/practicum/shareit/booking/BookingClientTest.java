@@ -143,4 +143,84 @@ class BookingClientTest {
         var list = mapper.convertValue(resp.getBody(), java.util.List.class);
         assertThat(list).hasSize(2);
     }
+
+    @Test
+    void testCreate_bodySerialization() throws Exception {
+        NewBookingRequest req = new NewBookingRequest();
+        req.setItemId(42L);
+        req.setStart(LocalDateTime.of(2030, 1, 2, 3, 4, 5)); // фикс время, чтобы легко матчить
+        req.setEnd(LocalDateTime.of(2030, 1, 3, 4, 5, 6));
+
+        String responseJson = "{ \"id\": 999, \"status\": \"WAITING\" }";
+
+        server.expect(once(), requestTo("http://localhost:9090/bookings"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-Sharer-User-Id", "123"))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                // Полное совпадение тела запроса (ISO-строки, поля)
+                .andExpect(content().json("{"
+                        + "\"itemId\":42,"
+                        + "\"start\":\"2030-01-02T03:04:05\","
+                        + "\"end\":\"2030-01-03T04:05:06\""
+                        + "}"))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        var resp = bookingClient.create(123L, req);
+
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @Test
+    void testApproveOrReject_false_sendsNullDto() {
+        String responseJson = "{ \"id\": 5, \"status\": \"REJECTED\" }";
+
+        server.expect(once(), requestTo("http://localhost:9090/bookings/5?approved=false"))
+                .andExpect(method(HttpMethod.PATCH))
+                .andExpect(header("X-Sharer-User-Id", "20"))
+                // PATCH-тело: три поля с null
+                .andExpect(content().json("{\"start\":null,\"end\":null,\"itemId\":null}"))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        var resp = bookingClient.approveOrReject(20L, 5L, false);
+
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+        JsonNode body = mapper.valueToTree(resp.getBody());
+        assertThat(body.get("status").asText()).isEqualTo("REJECTED");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(BookingState.class)
+    void testGetAllByBookerId_stateMapping(BookingState state) {
+        String url = "http://localhost:9090/bookings?state=" + state.name();
+        String responseJson = "[]";
+
+        server.expect(once(), requestTo(url))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-Sharer-User-Id", "777"))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        var resp = bookingClient.getAllByBookerId(777L, state);
+
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(BookingState.class)
+    void testGetAllByItemOwnerId_stateMapping(BookingState state) {
+        String url = "http://localhost:9090/bookings/owner?state=" + state.name();
+        String responseJson = "[]";
+
+        server.expect(once(), requestTo(url))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("X-Sharer-User-Id", "888"))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        var resp = bookingClient.getAllByItemOwnerId(888L, state);
+
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+    }
 }
