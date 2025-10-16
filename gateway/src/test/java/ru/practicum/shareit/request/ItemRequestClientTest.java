@@ -36,9 +36,7 @@ class ItemRequestClientTest {
         ItemRequestDto dto = new ItemRequestDto();
         dto.setDescription("Нужна дрель");
 
-        String responseJson = """
-            {"id": 1, "description": "Нужна дрель"}
-            """;
+        String responseJson = "{\"id\": 1, \"description\": \"Нужна дрель\"}";
 
         server.expect(once(), requestTo("http://localhost:9090/requests"))
                 .andExpect(method(HttpMethod.POST))
@@ -58,12 +56,8 @@ class ItemRequestClientTest {
 
     @Test
     void testGetOwn() {
-        String responseJson = """
-            [
-              {"id": 1, "description": "Нужна дрель"},
-              {"id": 2, "description": "Кейс для шуруповёрта"}
-            ]
-            """;
+        String responseJson = "[\n  {\"id\": 1, \"description\": \"Нужна дрель\"},\n  {\"id\": 2, \"description\": " +
+                "\"Кейс для шуруповёрта\"}\n]";
 
         server.expect(once(), requestTo("http://localhost:9090/requests"))
                 .andExpect(method(HttpMethod.GET))
@@ -80,15 +74,7 @@ class ItemRequestClientTest {
 
     @Test
     void testGetAll() {
-        // В текущей реализации клиента вызывается тот же URL, что и у getOwn: "/requests"
-        // Если на сервере ожидается "/requests/all", тест поможет поймать рассинхрон.
-        String responseJson = """
-            [
-              {"id": 3},
-              {"id": 4},
-              {"id": 5}
-            ]
-            """;
+        String responseJson = "[\n  {\"id\": 3},\n  {\"id\": 4},\n  {\"id\": 5}\n]";
 
         server.expect(once(), requestTo("http://localhost:9090/requests"))
                 .andExpect(method(HttpMethod.GET))
@@ -105,9 +91,7 @@ class ItemRequestClientTest {
 
     @Test
     void testGetById() {
-        String responseJson = """
-            {"id": 77, "description": "Запчасть"}
-            """;
+        String responseJson = "{\"id\": 77, \"description\": \"Дрель\"}";
 
         server.expect(once(), requestTo("http://localhost:9090/requests/77"))
                 .andExpect(method(HttpMethod.GET))
@@ -120,6 +104,6 @@ class ItemRequestClientTest {
         assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
         JsonNode body = mapper.valueToTree(resp.getBody());
         assertThat(body.get("id").asLong()).isEqualTo(77L);
-        assertThat(body.get("description").asText()).isEqualTo("Запчасть");
+        assertThat(body.get("description").asText()).isEqualTo("Дрель");
     }
 }

@@ -42,14 +42,13 @@ class BookingClientTest {
         req.setStart(LocalDateTime.now().plusDays(1).withNano(0));
         req.setEnd(LocalDateTime.now().plusDays(2).withNano(0));
 
-        String responseJson = """
-            {
-              "id": 1,
-              "status": "WAITING",
-              "item": {"id": 11},
-              "booker": {"id": 10}
-            }
-            """;
+        String responseJson = "{\n" +
+                "  \"id\": 1,\n" +
+                "  \"status\": \"WAITING\",\n" +
+                "  \"item\": {\"id\": 11},\n" +
+                "  \"booker\": {\"id\": 10}\n" +
+                "}";
+
 
         server.expect(once(), requestTo("http://localhost:9090/bookings"))
                 .andExpect(method(HttpMethod.POST))
@@ -69,9 +68,7 @@ class BookingClientTest {
 
     @Test
     void testApproveOrReject() throws Exception {
-        String responseJson = """
-            { "id": 5, "status": "APPROVED" }
-            """;
+        String responseJson = "{ \"id\": 5, \"status\": \"APPROVED\" }";
 
         server.expect(once(), requestTo("http://localhost:9090/bookings/5?approved=true"))
                 .andExpect(method(HttpMethod.PATCH))
@@ -90,9 +87,8 @@ class BookingClientTest {
 
     @Test
     void testGetById() throws Exception {
-        String responseJson = """
-            { "id": 7, "status": "WAITING" }
-            """;
+        String responseJson = "{ \"id\": 7, \"status\": \"WAITING\" }";
+
 
         server.expect(once(), requestTo("http://localhost:9090/bookings/7"))
                 .andExpect(method(HttpMethod.GET))
@@ -110,9 +106,7 @@ class BookingClientTest {
 
     @Test
     void testGetAllByBookerId() throws Exception {
-        String responseJson = """
-            [ { "id": 23 }, { "id": 34 } ]
-            """;
+        String responseJson = "[ { \"id\": 23 }, { \"id\": 34 } ]";
 
         server.expect(once(), requestTo("http://localhost:9090/bookings?state=PAST"))
                 .andExpect(method(HttpMethod.GET))
@@ -134,9 +128,8 @@ class BookingClientTest {
 
     @Test
     void testGetAllByItemOwnerId() throws Exception {
-        String responseJson = """
-            [ { "id": 10 }, { "id": 68 } ]
-            """;
+        String responseJson = "[ { \"id\": 10 }, { \"id\": 68 } ]";
+
 
         server.expect(once(), requestTo("http://localhost:9090/bookings/owner?state=FUTURE"))
                 .andExpect(method(HttpMethod.GET))

@@ -39,9 +39,7 @@ class ItemClientTest {
         dto.setDescription("Cordless");
         dto.setAvailable(true);
 
-        String responseJson = """
-            {"id": 1, "name": "Drill", "description":"Cordless", "available": true}
-            """;
+        String responseJson = "{\"id\": 1, \"name\": \"Drill\", \"description\":\"Cordless\", \"available\": true}";
 
         server.expect(once(), requestTo("http://localhost:9090/items"))
                 .andExpect(method(HttpMethod.POST))
@@ -65,9 +63,7 @@ class ItemClientTest {
         ItemDto dto = new ItemDto();
         dto.setName("New name");
 
-        String responseJson = """
-            {"id": 5, "name":"New name"}
-            """;
+        String responseJson = "{\"id\": 5, \"name\":\"New name\"}";
 
         server.expect(once(), requestTo("http://localhost:9090/items/5"))
                 .andExpect(method(HttpMethod.PATCH))
@@ -87,9 +83,7 @@ class ItemClientTest {
 
     @Test
     void testGetItem() throws Exception {
-        String responseJson = """
-            {"id": 7, "name":"Saw"}
-            """;
+        String responseJson = "{\"id\": 7, \"name\":\"Saw\"}";
 
         server.expect(once(), requestTo("http://localhost:9090/items/7"))
                 .andExpect(method(HttpMethod.GET))
@@ -107,9 +101,7 @@ class ItemClientTest {
 
     @Test
     void testGetItems() throws Exception {
-        String responseJson = """
-            [ {"id":1}, {"id":2}, {"id":3} ]
-            """;
+        String responseJson = "[ {\"id\":1}, {\"id\":2}, {\"id\":3} ]";
 
         server.expect(once(), requestTo("http://localhost:9090/items"))
                 .andExpect(method(HttpMethod.GET))
@@ -126,11 +118,8 @@ class ItemClientTest {
 
     @Test
     void testSearchItems() throws Exception {
-        // используем ascii-текст, чтобы не мучиться с URL-энкодингом в матчерах
-        String query = "drill-123";
-        String responseJson = """
-            [ {"id":10}, {"id":11} ]
-            """;
+        String query = "drill";
+        String responseJson = "[ {\"id\":10}, {\"id\":11} ]";
 
         server.expect(once(), requestTo("http://localhost:9090/items/search?text=" + query))
                 .andExpect(method(HttpMethod.GET))
@@ -150,9 +139,7 @@ class ItemClientTest {
         CommentDto dto = new CommentDto();
         dto.setText("Nice item!");
 
-        String responseJson = """
-            {"id": 100, "text": "Nice item!"}
-            """;
+        String responseJson = "{\"id\": 100, \"text\": \"Nice item!\"}";
 
         server.expect(once(), requestTo("http://localhost:9090/items/77/comment"))
                 .andExpect(method(HttpMethod.POST))

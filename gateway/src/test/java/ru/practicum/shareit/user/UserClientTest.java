@@ -36,17 +36,16 @@ class UserClientTest {
     void testCreate() throws Exception {
         NewUserRequest req = new NewUserRequest();
         req.setName("Dmitry");
-        req.setEmail("dmitry@example.com");
+        req.setEmail("dmitry@ya.ru");
 
-        String responseJson = """
-            {"id": 101, "name": "Dmitry", "email": "dmitry@example.com"}
-            """;
+        String responseJson = "{\"id\": 101, \"name\": \"Dmitry\", \"email\": \"dmitry@ya.ru\"}";
+
 
         server.expect(once(), requestTo("http://localhost:9090/users"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.name").value("Dmitry"))
-                .andExpect(jsonPath("$.email").value("dmitry@example.com"))
+                .andExpect(jsonPath("$.email").value("dmitry@ya.ru"))
                 .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
 
         var resp = client.create(req);
@@ -56,7 +55,7 @@ class UserClientTest {
         JsonNode body = mapper.valueToTree(resp.getBody());
         assertThat(body.get("id").asLong()).isEqualTo(101L);
         assertThat(body.get("name").asText()).isEqualTo("Dmitry");
-        assertThat(body.get("email").asText()).isEqualTo("dmitry@example.com");
+        assertThat(body.get("email").asText()).isEqualTo("dmitry@ya.ru");
     }
 
     @Test
@@ -65,9 +64,7 @@ class UserClientTest {
         req.setName("New Name");
         req.setEmail("new@mail.com");
 
-        String responseJson = """
-            {"id": 42, "name": "New Name", "email": "new@mail.com"}
-            """;
+        String responseJson = "{\"id\": 42, \"name\": \"New Name\", \"email\": \"new@mail.com\"}";
 
         server.expect(once(), requestTo("http://localhost:9090/users/42"))
                 .andExpect(method(HttpMethod.PATCH))
@@ -87,11 +84,8 @@ class UserClientTest {
 
     @Test
     void testFindAll() {
-        String responseJson = """
-            [
-              {"id":1,"name":"A"}, {"id":2,"name":"B"}
-            ]
-            """;
+        String responseJson = "[{\"id\":1,\"name\":\"A\"}, {\"id\":2,\"name\":\"B\"}]";
+
 
         server.expect(once(), requestTo("http://localhost:9090/users"))
                 .andExpect(method(HttpMethod.GET))
@@ -107,9 +101,7 @@ class UserClientTest {
 
     @Test
     void testGetUser() {
-        String responseJson = """
-            {"id":7,"name":"User7"}
-            """;
+        String responseJson = "{\"id\":7,\"name\":\"User7\"}";
 
         server.expect(once(), requestTo("http://localhost:9090/users/7"))
                 .andExpect(method(HttpMethod.GET))
@@ -123,16 +115,15 @@ class UserClientTest {
         assertThat(body.get("id").asLong()).isEqualTo(7L);
     }
 
-    // Если поправишь клиент на delete("/" + id), замени тест выше на этот:
-     @Test
-     void testDeleteUser() {
-         server.expect(once(), requestTo("http://localhost:9090/users/42"))
-               .andExpect(method(HttpMethod.DELETE))
-               .andRespond(withNoContent());
+    @Test
+    void testDeleteUser() {
+        server.expect(once(), requestTo("http://localhost:9090/users/42"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withNoContent());
 
-         var resp = client.deleteUser(42L);
+        var resp = client.deleteUser(42L);
 
-         server.verify();
-         assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
-     }
+        server.verify();
+        assertThat(resp.getStatusCode().is2xxSuccessful()).isTrue();
+    }
 }
