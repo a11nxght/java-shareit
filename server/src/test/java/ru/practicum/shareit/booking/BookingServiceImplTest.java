@@ -131,23 +131,6 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void testCreate_withPastStart_shouldFail() {
-        User owner = saveUser("Ivan", "iv2@ya.ru");
-        Item item = saveItem("pila", "ostraya", owner);
-        User booker = saveUser("Petr", "p2@ya.ru");
-
-        NewBookingRequest req = new NewBookingRequest();
-        req.setStart(LocalDateTime.now().minusHours(1));
-        req.setEnd(LocalDateTime.now().plusDays(1));
-        req.setItemId(item.getId());
-
-        assertThrows(
-                BadRequestException.class,
-                () -> bookingService.create(req, booker.getId())
-        );
-    }
-
-    @Test
     void testCreate_byOwnerItself_shouldFail() {
         User owner = saveUser("Owner", "own@ya.ru");
         Item item = saveItem("pila", "ostraya", owner);
@@ -321,21 +304,6 @@ class BookingServiceImplTest {
                 BadRequestException.class,
                 () -> bookingService.create(req, booker.getId())
         );
-    }
-
-    @Test
-    void create_endBeforeStart_shouldThrow() {
-        User owner = saveUser("Own","o@end");
-        Item item = saveItem("i","d", owner);
-        User booker = saveUser("B","b@end");
-
-        NewBookingRequest req = new NewBookingRequest();
-        req.setItemId(item.getId());
-        req.setStart(LocalDateTime.now().plusDays(2));
-        req.setEnd(LocalDateTime.now().plusDays(1));
-
-        assertThrows(ru.practicum.shareit.exceptions.BadRequestException.class,
-                () -> bookingService.create(req, booker.getId()));
     }
 
     @Test

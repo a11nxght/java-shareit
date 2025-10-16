@@ -39,12 +39,6 @@ public class BookingServiceImpl implements BookingService {
         if (newBookingRequest.getStart() == null || newBookingRequest.getEnd() == null) {
             throw new BadRequestException("Start and end must be provided.");
         }
-        if (!newBookingRequest.getEnd().isAfter(newBookingRequest.getStart())) {
-            throw new BadRequestException("End must be strictly after start.");
-        }
-        if (!newBookingRequest.getStart().isAfter(LocalDateTime.now().minusHours(1))) {
-            throw new BadRequestException("Start must be in the future.");
-        }
         User user = userRepository.findById(userId).orElseThrow(() -> {
             log.warn("Unable to create booking. User not found.");
             return new NotFoundException("User not found.");
