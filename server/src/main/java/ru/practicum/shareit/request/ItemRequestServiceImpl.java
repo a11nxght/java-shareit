@@ -48,7 +48,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         Sort newestFirst = Sort.by(Sort.Direction.DESC, "created");
         List<ItemRequest> itemRequests = itemRequestRepository.findAllByRequestorIdNot(userId, newestFirst);
         return itemRequests.stream().map(itemRequest ->
-                ItemRequestMapper.toItemRequestDto(itemRequest, itemRepository.findAllByRequestId(userId))).toList();
+                ItemRequestMapper.toItemRequestDto(itemRequest,
+                        itemRepository.findAllByRequestId(itemRequest.getId()))).toList();
     }
 
     @Override

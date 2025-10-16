@@ -106,7 +106,8 @@ public class ItemServiceImpl implements ItemService {
             }
         }
         ItemWithBookingDto itemWithBookingDto = ItemMapper.toItemWithBookingDto(item, lastBookingSmallDto, nextBookingSmallDto);
-        itemWithBookingDto.setComments(commentRepository.findAllByItemIdOrderByCreatedDesc(item.getId())
+        itemWithBookingDto.setComments(commentRepository.findAllByItemId(item.getId(),
+                        Sort.by(Sort.Direction.DESC, "created"))
                 .stream().map(CommentMapper::toCommentDto).toList());
         return itemWithBookingDto;
     }
@@ -122,7 +123,8 @@ public class ItemServiceImpl implements ItemService {
         List<Booking> past = bookingRepository.findPastForItems(itemsIds, LocalDateTime.now());
         List<Booking> future = bookingRepository.findFutureForItems(itemsIds, LocalDateTime.now());
 
-        Map<Long, List<Comment>> commentMap = commentRepository.findAllByItemIdsOrderByCreatedDesc(itemsIds)
+        Map<Long, List<Comment>> commentMap = commentRepository.findAllByItemIds(itemsIds,
+                        Sort.by(Sort.Direction.DESC, "created"))
                 .stream()
                 .collect(Collectors.groupingBy(comment -> comment.getItem().getId()));
 
