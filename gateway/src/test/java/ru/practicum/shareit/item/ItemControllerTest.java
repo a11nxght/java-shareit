@@ -23,10 +23,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ItemController.class)
 class ItemControllerTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired ObjectMapper mapper;
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    ObjectMapper mapper;
 
-    @MockBean ItemClient itemClient;
+    @MockBean
+    ItemClient itemClient;
 
     @Test
     void testCreate() throws Exception {
@@ -50,8 +53,91 @@ class ItemControllerTest {
     }
 
     @Test
-    void testCreateValidationFail() throws Exception {
+    void testCreateValidationFailNameMissing() throws Exception {
         ItemDto invalid = new ItemDto();
+        invalid.setDescription("ssss");
+        invalid.setAvailable(true);
+
+        when(itemClient.create(anyLong(), any(ItemDto.class)))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testCreateValidationFailDescriptionMissing() throws Exception {
+        ItemDto invalid = new ItemDto();
+        invalid.setName("ssss");
+        invalid.setAvailable(true);
+
+        when(itemClient.create(anyLong(), any(ItemDto.class)))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testCreateValidationFailAvailableMissing() throws Exception {
+        ItemDto invalid = new ItemDto();
+        invalid.setName("ssss");
+        invalid.setDescription("ssss");
+
+        when(itemClient.create(anyLong(), any(ItemDto.class)))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testCreateValidationFailLongName() throws Exception {
+        ItemDto invalid = new ItemDto();
+        invalid.setName("И наконец, ещё одна важная задача этого спринта — написать тесты для приложения ShareIt. " +
+                "Не оставляйте эту задачу на конец работы. Делайте всё постепенно: перед тем как реализовать " +
+                "какую-либо часть задания, сформулируйте функциональные и нефункциональные требования к ней. " +
+                "В соответствии с этими требованиями напишите реализацию. Затем напишите юнит-тесты, " +
+                "проверяющие реализацию на соответствие требованиям. \n" +
+                "После того как будут написаны тесты для новой функциональности, описанной в " +
+                "этом техническом задании, переходите к написанию тестов для тех возможностей, что были " +
+                "реализованы в предыдущих спринтах.");
+        invalid.setDescription("ssss");
+        invalid.setAvailable(true);
+
+        when(itemClient.create(anyLong(), any(ItemDto.class)))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(itemClient);
+    }
+
+    @Test
+    void testCreateValidationFailLongDescription() throws Exception {
+        ItemDto invalid = new ItemDto();
+        invalid.setDescription("asdfasdf".repeat(2000));
+        invalid.setName("ssss");
+        invalid.setAvailable(true);
 
         when(itemClient.create(anyLong(), any(ItemDto.class)))
                 .thenReturn(ResponseEntity.ok(Map.of()));
