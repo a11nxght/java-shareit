@@ -42,7 +42,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void testFindAllAndDelete () {
+    void testFindAllAndDelete() {
         NewUserRequest newUserRequest1 = createNewUser("qwe@ya.ru", "Иван Иванович");
         NewUserRequest newUserRequest2 = createNewUser("asd@ya.ru", "Петр Петрович");
         UserDto createdUser1 = userService.create(newUserRequest1);

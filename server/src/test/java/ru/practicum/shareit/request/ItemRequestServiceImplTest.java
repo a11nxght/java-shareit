@@ -39,12 +39,12 @@ class ItemRequestServiceImplTest {
         ItemRequestDto itemRequestDto = createItemRequestDto("нужна УШМ");
         ItemRequestDto created = itemRequestService.create(user.getId(), itemRequestDto);
 
-        assertThat(created.getId(),  notNullValue());
+        assertThat(created.getId(), notNullValue());
         assertThat(created.getDescription(), equalTo(itemRequestDto.getDescription()));
     }
 
     @Test
-    void testNotCreate () {
+    void testNotCreate() {
         ItemRequestDto itemRequestDto = createItemRequestDto("нужна УШМ");
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> itemRequestService.create(52L, itemRequestDto));
@@ -106,7 +106,7 @@ class ItemRequestServiceImplTest {
         return userRepository.save(u);
     }
 
-    private ItemRequestDto createItemRequestDto (String description) {
+    private ItemRequestDto createItemRequestDto(String description) {
         ItemRequestDto itemRequestDto = new ItemRequestDto();
         itemRequestDto.setDescription(description);
         return itemRequestDto;
