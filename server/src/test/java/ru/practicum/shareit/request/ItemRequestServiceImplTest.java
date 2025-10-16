@@ -92,6 +92,76 @@ class ItemRequestServiceImplTest {
         assertThat(getsItem.getId(), equalTo(itemRequestDto3.getId()));
     }
 
+    @Test
+    void create_userNotFound_shouldThrow() {
+        ItemRequestDto dto = createItemRequestDto("нужна шлифмашина");
+        assertThrows(NotFoundException.class,
+                () -> itemRequestService.create(9999L, dto));
+    }
+
+    @Test
+    void getOwn_userNotFound_shouldThrow() {
+        assertThrows(NotFoundException.class,
+                () -> itemRequestService.getOwn(9999L));
+    }
+
+    @Test
+    void getAll_userNotFound_shouldThrow() {
+        assertThrows(NotFoundException.class,
+                () -> itemRequestService.getAll(9999L));
+    }
+
+    @Test
+    void getById_userNotFound_shouldThrow() {
+        // сначала создадим реальный запрос другим пользователем
+        User user = saveUser("Ivan", "ivan@n.n");
+        ItemRequestDto created = itemRequestService.create(user.getId(), createItemRequestDto("нужна пила"));
+
+        // теперь запросим по несуществующему пользователю
+        assertThrows(NotFoundException.class,
+                () -> itemRequestService.getById(9999L, created.getId()));
+    }
+
+    @Test
+    void getById_requestNotFound_shouldThrow() {
+        User user = saveUser("Petr", "petr@n.n");
+        assertThrows(NotFoundException.class,
+                () -> itemRequestService.getById(user.getId(), 987654321L));
+    }
+
+    @Test
+    void getOwn_whenNoRequests_returnsEmpty() {
+        User user = saveUser("NoReq", "no@req.ru");
+        List<ItemRequestDto> own = itemRequestService.getOwn(user.getId());
+        assertTrue(own.isEmpty());
+    }
+
+    @Test
+    void getAll_excludesOwnRequests_andReturnsEmptyIfNoOthers() {
+        User me = saveUser("Me", "me@me.ru");
+        User other = saveUser("Other", "other@ex.ru");
+
+        ItemRequestDto myReq1 = itemRequestService.create(me.getId(), createItemRequestDto("мой запрос 1"));
+        ItemRequestDto myReq2 = itemRequestService.create(me.getId(), createItemRequestDto("мой запрос 2"));
+
+        List<ItemRequestDto> forOther = itemRequestService.getAll(other.getId());
+        assertFalse(forOther.isEmpty(), "У Other должны быть видны чужие (мои) запросы");
+
+        assertEquals(2, forOther.size());
+        var forOtherIds = forOther.stream().map(ItemRequestDto::getId).toList();
+        assertTrue(forOtherIds.containsAll(List.of(myReq1.getId(), myReq2.getId())));
+
+        ItemRequestDto foreign = itemRequestService.create(other.getId(), createItemRequestDto("ищу перфоратор"));
+
+        List<ItemRequestDto> forMe = itemRequestService.getAll(me.getId());
+        assertFalse(forMe.isEmpty());
+        assertEquals(foreign.getId(), forMe.getFirst().getId());
+        var forMeIds = forMe.stream().map(ItemRequestDto::getId).toList();
+        assertFalse(forMeIds.contains(myReq1.getId()));
+        assertFalse(forMeIds.contains(myReq2.getId()));
+    }
+
+
     private User createUser(long id, String name, String email) {
         User u = new User();
         u.setName(name);

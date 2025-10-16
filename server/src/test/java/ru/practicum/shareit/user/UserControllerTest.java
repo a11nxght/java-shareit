@@ -7,6 +7,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.exceptions.DuplicatedDataException;
+import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.user.dto.NewUserRequest;
 import ru.practicum.shareit.user.dto.UpdateUserRequest;
 import ru.practicum.shareit.user.dto.UserDto;
@@ -15,12 +17,10 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import static org.mockito.Mockito.when;
 
 @WebMvcTest(controllers = UserController.class)
 class UserControllerTest {
@@ -128,6 +128,73 @@ class UserControllerTest {
 
         mvc.perform(delete("/users/{id}", 12L))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void create_duplicatedEmail_returns409() throws Exception {
+        NewUserRequest body = new NewUserRequest();
+        body.setName("A");
+        body.setEmail("dup@a");
+
+        when(userService.create(any(NewUserRequest.class)))
+                .thenThrow(new DuplicatedDataException("email"));
+
+        mvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(body)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void update_notFound_returns404() throws Exception {
+        UpdateUserRequest patch = new UpdateUserRequest();
+        patch.setName("New");
+
+        when(userService.update(any(UpdateUserRequest.class), eq(999L)))
+                .thenThrow(new NotFoundException("user"));
+
+        mvc.perform(patch("/users/{id}", 999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(patch)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void update_duplicatedEmail_returns409() throws Exception {
+        UpdateUserRequest patch = new UpdateUserRequest();
+        patch.setEmail("busy@a");
+
+        when(userService.update(any(UpdateUserRequest.class), eq(5L)))
+                .thenThrow(new DuplicatedDataException("dup"));
+
+        mvc.perform(patch("/users/{id}", 5L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(patch)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void getUser_notFound_returns404() throws Exception {
+        when(userService.getUser(777L)).thenThrow(new NotFoundException("user"));
+        mvc.perform(get("/users/{id}", 777L))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteUser_notFound_returns404() throws Exception {
+        doThrow(new NotFoundException("user"))
+                .when(userService).deleteUser(321L);
+
+        mvc.perform(delete("/users/{id}", 321L))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void findAll_empty_returnsEmptyArray() throws Exception {
+        when(userService.findAll()).thenReturn(List.of());
+        mvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
 }

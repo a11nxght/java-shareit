@@ -5,15 +5,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exceptions.NotFoundException;
 import ru.practicum.shareit.user.dto.NewUserRequest;
 import ru.practicum.shareit.user.dto.UpdateUserRequest;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.exceptions.DuplicatedDataException;
 
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -56,6 +59,49 @@ class UserServiceImplTest {
         assertThat(users2.getFirst().getName(), equalTo(newUserRequest2.getName()));
 
     }
+
+    @Test
+    void create_duplicateEmail_shouldThrow() {
+        userService.create(createNewUser("dup@ya.ru", "A"));
+        assertThrows(DuplicatedDataException.class,
+                () -> userService.create(createNewUser("dup@ya.ru", "B"))
+        );
+    }
+
+    @Test
+    void getUser_notFound_shouldThrow() {
+        assertThrows(NotFoundException.class, () -> userService.getUser(999_999L));
+    }
+
+    @Test
+    void update_emptyPatch_keepsOriginalValues() {
+        UserDto created = userService.create(createNewUser("keep@ya.ru", "Keep"));
+        UpdateUserRequest empty = new UpdateUserRequest(); // ни name, ни email
+
+        UserDto updated = userService.update(empty, created.getId());
+
+        assertThat(updated.getName(), equalTo("Keep"));
+        assertThat(updated.getEmail(), equalTo("keep@ya.ru"));
+    }
+
+    @Test
+    void update_onlyEmail_changesEmail() {
+        UserDto created = userService.create(createNewUser("old@ya.ru", "Same"));
+
+        UpdateUserRequest patch = new UpdateUserRequest();
+        patch.setEmail("new@ya.ru");
+
+        UserDto updated = userService.update(patch, created.getId());
+        assertThat(updated.getName(), equalTo("Same"));
+        assertThat(updated.getEmail(), equalTo("new@ya.ru"));
+    }
+
+    @Test
+    void findAll_whenNoUsers_returnsEmptyList() {
+        List<UserDto> users = userService.findAll();
+        assertThat(users, notNullValue());
+    }
+
 
     private NewUserRequest createNewUser(String email, String name) {
         NewUserRequest newUserRequest = new NewUserRequest();

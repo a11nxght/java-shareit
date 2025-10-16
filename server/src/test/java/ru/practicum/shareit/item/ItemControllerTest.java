@@ -15,12 +15,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = ItemController.class)
 class ItemControllerTest {
@@ -157,4 +156,87 @@ class ItemControllerTest {
                 .andExpect(jsonPath("$.authorName").value("Dmitry"));
     }
 
+    @Test
+    void create_missingUserHeader_returns400() throws Exception {
+        ItemDto item = new ItemDto();
+        item.setName("name"); item.setDescription("desc"); item.setAvailable(true);
+
+        mvc.perform(post("/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(item)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_serviceBadRequest_returns400() throws Exception {
+        ItemDto item = new ItemDto();
+        item.setName("name"); item.setDescription("desc"); item.setAvailable(true);
+
+        when(itemService.create(any(ItemDto.class), eq(10L)))
+                .thenThrow(new ru.practicum.shareit.exceptions.BadRequestException("bad"));
+
+        mvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(item)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void update_byNonOwner_returns404() throws Exception {
+        ItemDto patch = new ItemDto();
+        patch.setDescription("hack");
+
+        when(itemService.update(any(ItemDto.class), eq(5L), eq(99L)))
+                .thenThrow(new ru.practicum.shareit.exceptions.NotFoundException("no"));
+
+        mvc.perform(patch("/items/{itemId}", 5L)
+                        .header("X-Sharer-User-Id", "99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(patch)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getItem_notFound_returns404() throws Exception {
+        when(itemService.getItem(777L, 1L))
+                .thenThrow(new ru.practicum.shareit.exceptions.NotFoundException("no"));
+
+        mvc.perform(get("/items/{itemId}", 777L)
+                        .header("X-Sharer-User-Id", "1"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getItems_empty_returnsEmptyArray() throws Exception {
+        when(itemService.getItems(52L)).thenReturn(List.of());
+
+        mvc.perform(get("/items")
+                        .header("X-Sharer-User-Id", "52"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void searchItems_missingTextParam_returns400() throws Exception {
+        mvc.perform(get("/items/search")
+                        .header("X-Sharer-User-Id", "5"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createComment_serviceBadRequest_returns400() throws Exception {
+        CommentDto dto = new CommentDto();
+        dto.setText("hi");
+
+        when(itemService.createComment(any(CommentDto.class), eq(7L), eq(3L)))
+                .thenThrow(new ru.practicum.shareit.exceptions.BadRequestException("no"));
+
+        mvc.perform(post("/items/{itemId}/comment", 3L)
+                        .header("X-Sharer-User-Id", "7")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
 }

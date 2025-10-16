@@ -36,6 +36,15 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingDto create(NewBookingRequest newBookingRequest, long userId) {
+        if (newBookingRequest.getStart() == null || newBookingRequest.getEnd() == null) {
+            throw new BadRequestException("Start and end must be provided.");
+        }
+        if (!newBookingRequest.getEnd().isAfter(newBookingRequest.getStart())) {
+            throw new BadRequestException("End must be strictly after start.");
+        }
+        if (!newBookingRequest.getStart().isAfter(LocalDateTime.now().minusHours(1))) {
+            throw new BadRequestException("Start must be in the future.");
+        }
         User user = userRepository.findById(userId).orElseThrow(() -> {
             log.warn("Unable to create booking. User not found.");
             return new NotFoundException("User not found.");
@@ -68,6 +77,9 @@ public class BookingServiceImpl implements BookingService {
             log.warn("Unable to approve or reject booking. Only the owner of the item can approve or reject the booking.");
             throw new ForbiddenException("Unable to approve or reject booking. " +
                     "This user does not have an item with this id.");
+        }
+        if (booking.getStatus() != BookingStatus.WAITING) {
+            throw new BadRequestException("Booking status is already decided.");
         }
         if (approved) {
             booking.setStatus(BookingStatus.APPROVED);

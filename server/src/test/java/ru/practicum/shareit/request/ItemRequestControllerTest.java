@@ -111,4 +111,75 @@ class ItemRequestControllerTest {
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.description").value("Нужна дрель"));
     }
+
+    @Test
+    void create_missingUserHeader_returns400() throws Exception {
+        ItemRequestDto dto = new ItemRequestDto();
+        dto.setDescription("Нужна дрель");
+
+        mvc.perform(post("/requests")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_blankDescription_returns400() throws Exception {
+        ItemRequestDto bad = new ItemRequestDto();
+        bad.setDescription("   ");
+
+        when(itemRequestService.create(eq(10L), any(ItemRequestDto.class)))
+                .thenThrow(new ru.practicum.shareit.exceptions.BadRequestException("desc blank"));
+
+        mvc.perform(post("/requests")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(bad)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getOwn_empty_returnsEmptyArray() throws Exception {
+        when(itemRequestService.getOwn(7L)).thenReturn(List.of());
+
+        mvc.perform(get("/requests")
+                        .header("X-Sharer-User-Id", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        org.mockito.Mockito.verify(itemRequestService).getOwn(7L);
+    }
+
+    @Test
+    void getAll_userNotFound_returns404() throws Exception {
+        when(itemRequestService.getAll(99L))
+                .thenThrow(new ru.practicum.shareit.exceptions.NotFoundException("user"));
+
+        mvc.perform(get("/requests/all")
+                        .header("X-Sharer-User-Id", "99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getById_requestNotFound_returns404() throws Exception {
+        when(itemRequestService.getById(12L, 555L))
+                .thenThrow(new ru.practicum.shareit.exceptions.NotFoundException("req"));
+
+        mvc.perform(get("/requests/{requestId}", 555L)
+                        .header("X-Sharer-User-Id", "12"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getById_userNotFound_returns404() throws Exception {
+        when(itemRequestService.getById(777L, 5L))
+                .thenThrow(new ru.practicum.shareit.exceptions.NotFoundException("user"));
+
+        mvc.perform(get("/requests/{requestId}", 5L)
+                        .header("X-Sharer-User-Id", "777"))
+                .andExpect(status().isNotFound());
+    }
+
+
 }

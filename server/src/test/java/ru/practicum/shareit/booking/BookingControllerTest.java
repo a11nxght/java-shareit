@@ -10,20 +10,21 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.NewBookingRequest;
 import ru.practicum.shareit.booking.model.BookingStatus;
+import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = BookingController.class)
 class BookingControllerTest {
@@ -171,5 +172,137 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(10))
                 .andExpect(jsonPath("$[1].id").value(68));
+    }
+
+    @Test
+    void create_withEndBeforeStart_returns400() throws Exception {
+        NewBookingRequest bad = new NewBookingRequest();
+        bad.setItemId(11L);
+        bad.setStart(LocalDateTime.now().plusDays(2));
+        bad.setEnd(LocalDateTime.now().plusDays(1));
+
+        when(bookingService.create(any(NewBookingRequest.class), eq(10L)))
+                .thenThrow(new BadRequestException("End must be strictly after start."));
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(bad)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_missingUserHeader_returns400() throws Exception {
+        NewBookingRequest ok = new NewBookingRequest();
+        ok.setItemId(11L);
+        ok.setStart(LocalDateTime.now().plusDays(1));
+        ok.setEnd(LocalDateTime.now().plusDays(2));
+
+        mvc.perform(post("/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(ok)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void approve_missingParam_returns400() throws Exception {
+        mvc.perform(patch("/bookings/{bookingId}", 5L)
+                        .header("X-Sharer-User-Id", "20"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void approve_invalidParam_returns400() throws Exception {
+        mvc.perform(patch("/bookings/{bookingId}", 5L)
+                        .header("X-Sharer-User-Id", "20")
+                        .param("approved", "maybe"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAllByBooker_unknownState_returns400() throws Exception {
+
+        when(bookingService.getALLByBookerId(eq(44L), eq("UNKNOWN")))
+                .thenThrow(new BadRequestException("Unknown state: UNKNOWN"));
+
+        mvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", "44")
+                        .param("state", "UNKNOWN"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAllByBooker_noState_usesALL_andCallsService() throws Exception {
+        when(bookingService.getALLByBookerId(44L, "All")).thenReturn(List.of());
+
+        mvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", "44"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()", is(0)));
+
+        verify(bookingService, times(1)).getALLByBookerId(44L, "All");
+    }
+
+    @Test
+    void getAllByOwner_noState_usesALL_andCallsService() throws Exception {
+        when(bookingService.getAllByItemOwnerId(55L, "All")).thenReturn(List.of());
+
+        mvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", "55"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()", is(0)));
+
+        verify(bookingService, times(1)).getAllByItemOwnerId(55L, "All");
+    }
+
+    @Test
+    void getAllByBooker_paginationParams_arePassed() throws Exception {
+        // если контроллер поддерживает from/size
+        when(bookingService.getALLByBookerId(70L, "PAST")).thenReturn(List.of());
+
+        mvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", "70")
+                        .param("state", "PAST")
+                        .param("from", "5")
+                        .param("size", "10"))
+                .andExpect(status().isOk());
+
+        // Если в сервисе отдельный метод с pageable — подкорректируй verify.
+        verify(bookingService).getALLByBookerId(70L, "PAST");
+    }
+
+    @Test
+    void getAllByBooker_emptyList_returnsEmptyArray() throws Exception {
+        when(bookingService.getALLByBookerId(44L, "All")).thenReturn(List.of());
+
+        mvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", "44")
+                        .param("state", "All"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void create_serializesIsoDates() throws Exception {
+        NewBookingRequest req = new NewBookingRequest();
+        req.setItemId(99L);
+        req.setStart(LocalDateTime.now().plusDays(1).withNano(0));
+        req.setEnd(LocalDateTime.now().plusDays(2).withNano(0));
+
+        BookingDto resp = new BookingDto();
+        resp.setId(123L);
+        resp.setStatus(BookingStatus.WAITING);
+        resp.setStart(req.getStart());
+        resp.setEnd(req.getEnd());
+
+        when(bookingService.create(any(NewBookingRequest.class), eq(10L))).thenReturn(resp);
+
+        mvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.start", notNullValue()))
+                .andExpect(jsonPath("$.end", notNullValue()));
     }
 }
