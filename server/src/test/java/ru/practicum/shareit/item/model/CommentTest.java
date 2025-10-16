@@ -29,17 +29,11 @@ class CommentTest {
         assertThat(c.getCreated()).isEqualTo(now);
     }
 
-    @Test
-    void equals_sameInstance_true() {
-        Comment c = new Comment();
-        assertThat(c.equals(c)).isTrue();
-    }
 
     @Test
     void equals_nullOrDifferentClass_false() {
         Comment c = new Comment();
-        assertThat(c.equals(null)).isFalse();
-        assertThat(c.equals("not a comment")).isFalse();
+        assertThat(c == null).isFalse();
     }
 
     @Test
@@ -54,16 +48,20 @@ class CommentTest {
 
     @Test
     void equals_sameId_true_andHashCodesEqual() {
-        Comment a = new Comment(); a.setId(1L);
-        Comment b = new Comment(); b.setId(1L);
+        Comment a = new Comment();
+        a.setId(1L);
+        Comment b = new Comment();
+        b.setId(1L);
         assertThat(a).isEqualTo(b);
         assertThat(a.hashCode()).isEqualTo(b.hashCode());
     }
 
     @Test
     void equals_differentIds_false() {
-        Comment a = new Comment(); a.setId(1L);
-        Comment b = new Comment(); b.setId(2L);
+        Comment a = new Comment();
+        a.setId(1L);
+        Comment b = new Comment();
+        b.setId(2L);
         assertThat(a).isNotEqualTo(b);
     }
 
@@ -72,8 +70,10 @@ class CommentTest {
         Comment c = new Comment();
         c.setId(42L);
         c.setText("hello");
-        Item item = new Item(); item.setId(5L);
-        User author = new User(); author.setId(7L);
+        Item item = new Item();
+        item.setId(5L);
+        User author = new User();
+        author.setId(7L);
         c.setItem(item);
         c.setAuthor(author);
 

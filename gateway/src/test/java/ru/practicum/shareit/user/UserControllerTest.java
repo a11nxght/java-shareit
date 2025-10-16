@@ -108,7 +108,6 @@ class UserControllerTest {
     @Test
     void testDeleteUser() throws Exception {
         when(userClient.deleteUser(anyLong())).thenReturn(ResponseEntity.ok(Map.of()));
-        ;
 
         mvc.perform(delete("/users/{id}", 9L))
                 .andExpect(status().isOk());

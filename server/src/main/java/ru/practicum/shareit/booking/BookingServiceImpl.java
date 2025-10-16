@@ -99,8 +99,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getALLByBookerId(Long bookerId, String stateStr) {
-        BookingState state = BookingState.from(stateStr);
+    public List<BookingDto> getALLByBookerId(Long bookerId, BookingState state) {
         LocalDateTime now = LocalDateTime.now();
         Sort newestFirst = Sort.by(Sort.Direction.DESC, "start");
         List<Booking> bookings = new ArrayList<>();
@@ -122,12 +121,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDto> getAllByItemOwnerId(Long ownerId, String stateStr) {
+    public List<BookingDto> getAllByItemOwnerId(Long ownerId, BookingState state) {
         userRepository.findById(ownerId).orElseThrow(() -> {
             log.warn("Unable to get bookings. User not found.");
             return new NotFoundException("User not found.");
         });
-        BookingState state = BookingState.from(stateStr);
         LocalDateTime now = LocalDateTime.now();
         Sort newestFirst = Sort.by(Sort.Direction.DESC, "start");
         List<Booking> bookings = new ArrayList<>();

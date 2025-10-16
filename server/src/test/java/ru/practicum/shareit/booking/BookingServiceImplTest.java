@@ -7,6 +7,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.NewBookingRequest;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.exceptions.ForbiddenException;
@@ -124,9 +125,9 @@ class BookingServiceImplTest {
         newBookingRequest2.setEnd(LocalDateTime.now().plusDays(4));
         newBookingRequest2.setItemId(item2.getId());
         BookingDto bookingDto2 = bookingService.create(newBookingRequest2, user4.getId());
-        List<BookingDto> bookingDtos = bookingService.getALLByBookerId(user4.getId(), "ALL");
+        List<BookingDto> bookingDtos = bookingService.getALLByBookerId(user4.getId(), BookingState.ALL);
         assertThat(bookingDtos.getFirst().getItem().getName(), equalTo(item2.getName()));
-        List<BookingDto> bookingDtos2 = bookingService.getAllByItemOwnerId(user.getId(), "All");
+        List<BookingDto> bookingDtos2 = bookingService.getAllByItemOwnerId(user.getId(), BookingState.ALL);
         assertThat(bookingDtos2.getFirst().getItem().getName(), equalTo(item.getName()));
     }
 
@@ -212,24 +213,6 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void testGetAllByBooker_unknownState_shouldFail() {
-        User u = saveUser("U", "u@ya.ru");
-        org.junit.jupiter.api.Assertions.assertThrows(
-                BadRequestException.class, // либо UnsupportedStatusException — подставь своё
-                () -> bookingService.getALLByBookerId(u.getId(), "UNKNOWN")
-        );
-    }
-
-    @Test
-    void testGetAllByOwner_unknownState_shouldFail() {
-        User u = saveUser("O", "owner@ya.ru");
-        org.junit.jupiter.api.Assertions.assertThrows(
-                BadRequestException.class,
-                () -> bookingService.getAllByItemOwnerId(u.getId(), "???")
-        );
-    }
-
-    @Test
     void testGetAllByBooker_filtersByState() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -269,15 +252,15 @@ class BookingServiceImplTest {
         BookingDto rejected = bookingService.approveOrReject(owner.getId(), future.getId(), false);
         assertThat(rejected.getStatus(), equalTo(BookingStatus.REJECTED));
 
-        List<BookingDto> waiting = bookingService.getALLByBookerId(booker.getId(), "WAITING");
+        List<BookingDto> waiting = bookingService.getALLByBookerId(booker.getId(), BookingState.WAITING);
         assertThat(waiting, notNullValue());
 
-        List<BookingDto> rejectedList = bookingService.getALLByBookerId(booker.getId(), "REJECTED");
+        List<BookingDto> rejectedList = bookingService.getALLByBookerId(booker.getId(), BookingState.REJECTED);
         assertThat(rejectedList.stream().anyMatch(b -> b.getId().equals(rejected.getId())), equalTo(true));
 
-        List<BookingDto> futureList  = bookingService.getALLByBookerId(booker.getId(), "FUTURE");
-        List<BookingDto> pastList    = bookingService.getALLByBookerId(booker.getId(), "PAST");
-        List<BookingDto> currentList = bookingService.getALLByBookerId(booker.getId(), "CURRENT");
+        List<BookingDto> futureList  = bookingService.getALLByBookerId(booker.getId(), BookingState.FUTURE);
+        List<BookingDto> pastList    = bookingService.getALLByBookerId(booker.getId(), BookingState.PAST);
+        List<BookingDto> currentList = bookingService.getALLByBookerId(booker.getId(), BookingState.CURRENT);
 
         assertThat(futureList.stream().allMatch(b -> b.getStart().isAfter(now)), equalTo(true));
         assertThat(pastList.stream().allMatch(b -> b.getEnd().isBefore(now)), equalTo(true));
@@ -362,9 +345,9 @@ class BookingServiceImplTest {
         bookingService.create(f, booker.getId());
 
         // Проверяем несколько состояний у owner
-        bookingService.getAllByItemOwnerId(owner.getId(), "WAITING");
-        bookingService.getAllByItemOwnerId(owner.getId(), "REJECTED");
-        bookingService.getAllByItemOwnerId(owner.getId(), "FUTURE");
+        bookingService.getAllByItemOwnerId(owner.getId(), BookingState.WAITING);
+        bookingService.getAllByItemOwnerId(owner.getId(), BookingState.REJECTED);
+        bookingService.getAllByItemOwnerId(owner.getId(), BookingState.FUTURE);
     }
 
 

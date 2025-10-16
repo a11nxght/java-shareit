@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.NewBookingRequest;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exceptions.BadRequestException;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -143,11 +144,11 @@ class BookingControllerTest {
         BookingDto b2 = new BookingDto();
         b2.setId(34L);
 
-        when(bookingService.getALLByBookerId(44L, "All")).thenReturn(List.of(b1, b2));
+        when(bookingService.getALLByBookerId(44L, BookingState.ALL)).thenReturn(List.of(b1, b2));
 
         mvc.perform(get("/bookings")
                         .header("X-Sharer-User-Id", "44")
-                        .param("state", "All")
+                        .param("state", "ALL")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -162,7 +163,7 @@ class BookingControllerTest {
         BookingDto b2 = new BookingDto();
          b2.setId(68L);
 
-        when(bookingService.getAllByItemOwnerId(55L, "PAST")).thenReturn(List.of(b1, b2));
+        when(bookingService.getAllByItemOwnerId(55L, BookingState.PAST)).thenReturn(List.of(b1, b2));
 
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", "55")
@@ -220,45 +221,33 @@ class BookingControllerTest {
     }
 
     @Test
-    void getAllByBooker_unknownState_returns400() throws Exception {
-
-        when(bookingService.getALLByBookerId(eq(44L), eq("UNKNOWN")))
-                .thenThrow(new BadRequestException("Unknown state: UNKNOWN"));
-
-        mvc.perform(get("/bookings")
-                        .header("X-Sharer-User-Id", "44")
-                        .param("state", "UNKNOWN"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void getAllByBooker_noState_usesALL_andCallsService() throws Exception {
-        when(bookingService.getALLByBookerId(44L, "All")).thenReturn(List.of());
+        when(bookingService.getALLByBookerId(44L, BookingState.ALL)).thenReturn(List.of());
 
         mvc.perform(get("/bookings")
                         .header("X-Sharer-User-Id", "44"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()", is(0)));
 
-        verify(bookingService, times(1)).getALLByBookerId(44L, "All");
+        verify(bookingService, times(1)).getALLByBookerId(44L, BookingState.ALL);
     }
 
     @Test
     void getAllByOwner_noState_usesALL_andCallsService() throws Exception {
-        when(bookingService.getAllByItemOwnerId(55L, "All")).thenReturn(List.of());
+        when(bookingService.getAllByItemOwnerId(55L, BookingState.ALL)).thenReturn(List.of());
 
         mvc.perform(get("/bookings/owner")
                         .header("X-Sharer-User-Id", "55"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()", is(0)));
 
-        verify(bookingService, times(1)).getAllByItemOwnerId(55L, "All");
+        verify(bookingService, times(1)).getAllByItemOwnerId(55L, BookingState.ALL);
     }
 
     @Test
     void getAllByBooker_paginationParams_arePassed() throws Exception {
         // если контроллер поддерживает from/size
-        when(bookingService.getALLByBookerId(70L, "PAST")).thenReturn(List.of());
+        when(bookingService.getALLByBookerId(70L, BookingState.PAST)).thenReturn(List.of());
 
         mvc.perform(get("/bookings")
                         .header("X-Sharer-User-Id", "70")
@@ -268,16 +257,16 @@ class BookingControllerTest {
                 .andExpect(status().isOk());
 
         // Если в сервисе отдельный метод с pageable — подкорректируй verify.
-        verify(bookingService).getALLByBookerId(70L, "PAST");
+        verify(bookingService).getALLByBookerId(70L, BookingState.PAST);
     }
 
     @Test
     void getAllByBooker_emptyList_returnsEmptyArray() throws Exception {
-        when(bookingService.getALLByBookerId(44L, "All")).thenReturn(List.of());
+        when(bookingService.getALLByBookerId(44L, BookingState.PAST)).thenReturn(List.of());
 
         mvc.perform(get("/bookings")
                         .header("X-Sharer-User-Id", "44")
-                        .param("state", "All"))
+                        .param("state", "ALL"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
     }
